@@ -67,7 +67,7 @@ object HardwareMonitorProcessManager {
     fun start() {
         val currentDir = Path.of("").toAbsolutePath().toString()
         val file = if (isDev()) {
-            "$currentDir\\HardwareMonitor\\HardwareMonitor\\bin\\Release\\net8.0\\HardwareMonitor.exe"
+            "$currentDir\\HardwareMonitor\\HardwareMonitor\\bin\\Release\\net8.0\\win-x64\\native\\HardwareMonitor.exe"
         } else {
             "$currentDir\\app\\resources\\HardwareMonitor.exe"
         }

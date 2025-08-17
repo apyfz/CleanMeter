@@ -34,8 +34,7 @@ public class PresentMonPoller(ILogger logger)
         Frametime = new PresentMonSensor(_hardware, "frametime", 2, "Frametime");
         CurrentApps = [];
 
-        using var reader = new StreamReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "presentmon",
-            "ignored-processes.txt"));
+        using var reader = new StreamReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ignored-processes.txt"));
         var text = (await reader.ReadToEndAsync())
             .Split("\n", StringSplitOptions.RemoveEmptyEntries)
             .Select(x => $"--exclude {x.Trim()}");
@@ -48,7 +47,7 @@ public class PresentMonPoller(ILogger logger)
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            FileName = "presentmon\\presentmon.exe",
+            FileName = "presentmon.exe",
             Arguments =
                 $"--stop_existing_session --no_console_stats --output_stdout --session_name HardwareMonitor {filteredApps}",
         };
@@ -121,7 +120,7 @@ public class PresentMonPoller(ILogger logger)
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            FileName = "presentmon\\presentmon.exe",
+            FileName = "presentmon.exe",
             Arguments =
                 $"--terminate_existing_session --no_console_stats --output_stdout --session_name HardwareMonitor",
         };

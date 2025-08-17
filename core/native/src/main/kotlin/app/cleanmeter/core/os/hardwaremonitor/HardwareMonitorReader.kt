@@ -30,7 +30,7 @@ enum class Command(val value: Short) {
 object HardwareMonitorReader {
 
     private var _currentData: HardwareMonitorData = HardwareMonitorData(0L, emptyList(), emptyList(), emptyList())
-    val currentData: Flow<HardwareMonitorData> = SocketClient
+    val currentData: Flow<HardwareMonitorData> = PipeClient
         .packetFlow
         .mapNotNull { packet ->
             when (packet) {

@@ -3,16 +3,16 @@ package app.cleanmeter.target.desktop.ui.settings
 import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.ViewModel
 import app.cleanmeter.core.common.hardwaremonitor.HardwareMonitorData
+import app.cleanmeter.core.os.PREFERENCE_PERMISSION_CONSENT
+import app.cleanmeter.core.os.PreferencesRepository
 import app.cleanmeter.core.os.hardwaremonitor.HardwareMonitorProcessManager
 import app.cleanmeter.core.os.hardwaremonitor.HardwareMonitorReader
 import app.cleanmeter.core.os.hardwaremonitor.Packet
-import app.cleanmeter.core.os.hardwaremonitor.SocketClient
+import app.cleanmeter.core.os.hardwaremonitor.PipeClient
 import app.cleanmeter.core.os.win32.WindowsService
 import app.cleanmeter.target.desktop.KeyboardEvent
 import app.cleanmeter.target.desktop.KeyboardManager
 import app.cleanmeter.target.desktop.data.OverlaySettingsRepository
-import app.cleanmeter.core.os.PREFERENCE_PERMISSION_CONSENT
-import app.cleanmeter.core.os.PreferencesRepository
 import app.cleanmeter.target.desktop.model.OverlaySettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +29,6 @@ import kotlinx.serialization.json.Json
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
-import java.util.Scanner
 
 sealed interface Log {
     @JvmInline
@@ -190,8 +189,8 @@ class SettingsViewModel : ViewModel() {
             HardwareMonitorReader.currentData.first()
 
             _state.value.overlaySettings?.let {
-                SocketClient.setPollingRate(it.pollingRate)
-                SocketClient.sendPacket(Packet.SelectPollingRate(it.pollingRate.toShort()))
+                PipeClient.setPollingRate(it.pollingRate)
+                PipeClient.sendPacket(Packet.SelectPollingRate(it.pollingRate.toShort()))
             }
         }
     }
@@ -239,8 +238,8 @@ class SettingsViewModel : ViewModel() {
 
         val newSettings = settingsState.overlaySettings.copy(pollingRate = pollingRate)
 
-        SocketClient.setPollingRate(pollingRate)
-        SocketClient.sendPacket(Packet.SelectPollingRate(pollingRate.toShort()))
+        PipeClient.setPollingRate(pollingRate)
+        PipeClient.sendPacket(Packet.SelectPollingRate(pollingRate.toShort()))
 
         OverlaySettingsRepository.setOverlaySettings(newSettings)
     }
@@ -327,7 +326,7 @@ class SettingsViewModel : ViewModel() {
     }
 
     private fun onFpsApplicationSelect(applicationName: String, settingsState: SettingsState) {
-        SocketClient.sendPacket(Packet.SelectPresentMonApp(applicationName))
+        PipeClient.sendPacket(Packet.SelectPresentMonApp(applicationName))
     }
 
     private fun onDarkModeToggle(enabled: Boolean, settingsState: SettingsState) {

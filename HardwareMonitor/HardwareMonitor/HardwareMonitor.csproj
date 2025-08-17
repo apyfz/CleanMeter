@@ -28,7 +28,7 @@
             <RootFiles Include="$(ProjectDir)..\..\presentmon\*"/>
         </ItemGroup>
 
-        <Copy SourceFiles="@(RootFiles)" DestinationFolder="$(TargetDir)\presentmon"/>
+        <Copy SourceFiles="@(RootFiles)" DestinationFolder="$(TargetDir)\native"/>
     </Target>
 
 </Project>

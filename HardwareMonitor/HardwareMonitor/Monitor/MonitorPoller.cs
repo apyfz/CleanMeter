@@ -30,7 +30,7 @@ public class MonitorPoller(
         IsStorageEnabled = true,
     };
 
-    private SocketHost _socketHost = new(logger);
+    private PipeHost _socketHost = new(logger);
     private readonly PresentMonPoller _presentMonPoller = new(logger);
 
     private short _pollingRate = 500;
@@ -60,7 +60,7 @@ public class MonitorPoller(
         {
             if (!_socketHost.HasConnections())
             {
-                logger.LogInformation("No clients, skipping...");
+                //logger.LogInformation("No clients connected, waiting for connections...");
                 await Task.Delay(1000, stoppingToken);
                 continue;
             }
@@ -83,6 +83,9 @@ public class MonitorPoller(
             if (_socketHost.HasConnections())
             {
                 _socketHost.SendToAll(memoryStream.ToArray());
+            } else
+            {
+                //logger.LogInformation("No clients connected, not sending data");
             }
 
             if (accumulator >= 1000)
@@ -193,10 +196,6 @@ public class MonitorPoller(
         if (_socketHost.HasConnections())
         {
             _socketHost.SendToAll(memoryStream.ToArray());
-        }
-        else
-        {
-            logger.LogInformation("No clients to send");
         }
     }
 

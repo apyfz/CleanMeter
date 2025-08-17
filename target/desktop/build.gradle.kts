@@ -1,26 +1,20 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
+val copyPresentMon = tasks.register<Copy>("copyPresentMon") {
+    from("../../HardwareMonitor/HardwareMonitor/bin/Release/net8.0/win-x64/presentmon")
+    into(layout.buildDirectory.dir("compose/binaries/main/app/cleanmeter/app/resources"))
+}
+
 val copyMonitorFiles = tasks.register<Copy>("copyMonitorFiles") {
-    from("../../HardwareMonitor/HardwareMonitor/bin/Release/net8.0")
-    into(layout.buildDirectory.dir("compose/binaries/main/app/cleanmeter/app/resources"))
-}
-
-val copyTesterFiles = tasks.register<Copy>("copyTesterFiles") {
-    finalizedBy(copyMonitorFiles)
-    from("../../HardwareMonitor/HardwareMonitorTester/bin/Release/net8.0")
-    into(layout.buildDirectory.dir("compose/binaries/main/app/cleanmeter/app/resources"))
-}
-
-val copyUpdaterFiles = tasks.register<Copy>("copyUpdaterFiles") {
-    finalizedBy(copyTesterFiles)
-    from("../../Updater/bin/Release/net8.0")
+//    finalizedBy(copyPresentMon)
+    from("../../HardwareMonitor/HardwareMonitor/bin/Release/net8.0/win-x64/native")
     into(layout.buildDirectory.dir("compose/binaries/main/app/cleanmeter/app/resources"))
 }
 
 val compileMonitor = tasks.register<Exec>("compileMonitor") {
-    finalizedBy(copyUpdaterFiles)
+    finalizedBy(copyMonitorFiles)
     workingDir("../../HardwareMonitor/")
-    commandLine("dotnet", "build", "--configuration", "Release")
+    commandLine("dotnet", "publish", "-c", "Release", "-r", "win-x64", "-p:PublishAot=true")
 }
 
 plugins {
