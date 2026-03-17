@@ -1,66 +1,75 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
-
-name: Java CI with Gradle
+name: Build and Release
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    tags:
+      - "v*"
+  workflow_dispatch:
 
 jobs:
   build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            bundles: nsis
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            bundles: dmg,app
+          - platform: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bundles: deb
 
-    runs-on: windows-latest
-    permissions:
-      contents: read
-
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.200'
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '22'
-        distribution: 'corretto'
-
-    # Configure Gradle for optimal use in GitHub Actions, including caching of downloaded dependencies.
-    # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
-
-    - name: Build with Gradle Wrapper
-      run: ./gradlew :target:desktop:createDistributable
-
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: cleanmeter
-        path: target\desktop\build\compose\binaries\main\app
-
-  dependency-submission:
-
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    runs-on: ${{ matrix.platform }}
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up JDK 22
-      uses: actions/setup-java@v4
-      with:
-        java-version: '22'
-        distribution: 'corretto'
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    # Generates and submits a dependency graph, enabling Dependabot Alerts for all project dependencies.
-    # See: https://github.com/gradle/actions/blob/main/dependency-submission/README.md
-    - name: Generate and submit dependency graph
-      uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install dependencies (Ubuntu)
+        if: matrix.platform == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libgtk-3-dev
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install npm dependencies
+        working-directory: tauri-app
+        run: npm install --legacy-peer-deps
+
+      - name: Install .NET SDK (Windows — for HardwareMonitor sidecar)
+        if: matrix.platform == 'windows-latest'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Build HardwareMonitor sidecar (Windows)
+        if: matrix.platform == 'windows-latest'
+        working-directory: HardwareMonitor/HardwareMonitor
+        run: dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true
+        shell: bash
+        continue-on-error: true
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: tauri-app
+          tagName: v__VERSION__
+          releaseName: "CleanMeter v__VERSION__"
+          releaseBody: "See the assets to download and install this version."
+          releaseDraft: true
+          prerelease: false
+          args: --bundles ${{ matrix.bundles }}

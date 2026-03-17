@@ -1,0 +1,79 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicegui/toolkits/refs/heads/main/tauri/schema.json",
+  "productName": "CleanMeter",
+  "identifier": "com.cleanmeter.desktop",
+  "version": "2.0.0",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "settings",
+        "title": "CleanMeter",
+        "url": "/",
+        "width": 420,
+        "height": 700,
+        "resizable": false,
+        "decorations": false,
+        "center": true,
+        "visible": true,
+        "transparent": false
+      },
+      {
+        "label": "overlay",
+        "title": "",
+        "url": "/overlay.html",
+        "width": 1280,
+        "height": 80,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false,
+        "focus": false
+      }
+    ],
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": false,
+      "menuOnLeftClick": false
+    },
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "deb", "dmg", "app"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png"
+    ],
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installerIcon": "icons/icon.ico",
+        "installMode": "currentUser"
+      }
+    },
+    "resources": []
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/Danil0v3s/CleanMeter/releases/latest/download/latest.json"
+      ],
+      "dialog": false
+    },
+    "global-shortcut": {
+      "shortcuts": []
+    }
+  }
+}
