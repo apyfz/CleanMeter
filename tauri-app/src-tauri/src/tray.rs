@@ -22,7 +22,11 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     tray.set_menu(Some(menu))?;
 
     tray.on_tray_icon_event(|tray, event| {
-        if let TrayIconEvent::Click { .. } = event {
+        if let TrayIconEvent::Click {
+            button: tauri::tray::MouseButton::Left,
+            ..
+        } = event
+        {
             let app = tray.app_handle();
             if let Some(window) = app.get_webview_window("settings") {
                 let _ = window.show();

@@ -15,6 +15,8 @@ export function FpsSection({ isHorizontal }: FpsSectionProps) {
   const frametimeHistory = useFrametimeHistory();
   const sensors = sensorData?.sensors ?? [];
 
+  const valueFontSize = settings.fontSizeValue ?? 24;
+  const labelFontSize = settings.fontSizeLabel ?? 12;
   const { framerate, frametime } = settings.sensors;
   if (!framerate.isEnabled && !frametime.isEnabled) return null;
 
@@ -33,7 +35,7 @@ export function FpsSection({ isHorizontal }: FpsSectionProps) {
   return (
     <Pill title="FPS" isHorizontal={isHorizontal}>
       {framerate.isEnabled && (
-        <span className="text-xs font-medium text-white tabular-nums">
+        <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
           {formatValue(fpsValue)}
         </span>
       )}
@@ -44,9 +46,10 @@ export function FpsSection({ isHorizontal }: FpsSectionProps) {
             width={isHorizontal ? 60 : 80}
             height={isHorizontal ? 20 : 24}
           />
-          <span className="text-xs text-white/60 tabular-nums">
-            {formatValue(lastFrametime, 1)}ms
+          <span className="tabular-nums" style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }}>
+            {formatValue(lastFrametime, 1)}
           </span>
+          <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "rgba(255,255,255,0.7)" }}>ms</span>
         </>
       )}
     </Pill>

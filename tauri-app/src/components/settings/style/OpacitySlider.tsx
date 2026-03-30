@@ -14,6 +14,9 @@ export function OpacitySlider() {
         borderRadius: 8,
         border: `1px solid ${tokens.colorNeutralStroke2}`,
         padding: "12px 20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
       }}
     >
       <Collapsible title="Opacity">
@@ -46,6 +49,40 @@ export function OpacitySlider() {
               max={1}
               step={0.05}
               onChange={(v) => updateSettings({ pillOpacity: v })}
+            />
+          </div>
+        </div>
+      </Collapsible>
+      <Collapsible title="Font size">
+        <div className="flex flex-col gap-4">
+          <div>
+            <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
+              <Caption1 style={{ fontWeight: 600 }}>Sensor values</Caption1>
+              <Caption1 style={{ color: tokens.colorNeutralForeground4 }}>
+                {settings.fontSizeValue ?? 24}px
+              </Caption1>
+            </div>
+            <Slider
+              value={settings.fontSizeValue ?? 24}
+              min={10}
+              max={48}
+              step={1}
+              onChange={(v) => updateSettings({ fontSizeValue: v })}
+            />
+          </div>
+          <div>
+            <div className="flex items-center justify-between" style={{ marginBottom: 4 }}>
+              <Caption1 style={{ fontWeight: 600 }}>Sensor labels</Caption1>
+              <Caption1 style={{ color: tokens.colorNeutralForeground4 }}>
+                {settings.fontSizeLabel ?? 12}px
+              </Caption1>
+            </div>
+            <Slider
+              value={settings.fontSizeLabel ?? 12}
+              min={8}
+              max={24}
+              step={1}
+              onChange={(v) => updateSettings({ fontSizeLabel: v })}
             />
           </div>
         </div>

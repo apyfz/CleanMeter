@@ -176,9 +176,69 @@ pub fn run() {
                 });
             }
 
-            // Handle settings window close → minimize to tray
-            let app_handle3 = app.handle().clone();
+            // Position settings window as a right-side panel (like Win11 notification panel)
             if let Some(settings_window) = app.get_webview_window("settings") {
+                if let Ok(Some(monitor)) = settings_window.primary_monitor() {
+                    let scale = monitor.scale_factor();
+                    let size = monitor.size();
+                    let panel_width = 420u32;
+                    // Use SystemParametersInfo to get work area (screen minus taskbar)
+                    #[cfg(windows)]
+                    {
+                        use windows::Win32::UI::WindowsAndMessaging::{
+                            SystemParametersInfoW, SPI_GETWORKAREA, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+                        };
+                        use windows::Win32::Foundation::RECT;
+                        let mut work_area = RECT::default();
+                        let _ = unsafe {
+                            SystemParametersInfoW(
+                                SPI_GETWORKAREA,
+                                0,
+                                Some(&mut work_area as *mut _ as *mut _),
+                                SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS(0),
+                            )
+                        };
+                        let wa_width = (work_area.right - work_area.left) as u32;
+                        let wa_height = (work_area.bottom - work_area.top) as u32;
+                        let wa_top = work_area.top;
+                        let wa_left = work_area.left;
+
+                        if wa_width > 0 && wa_height > 0 {
+                            let x = wa_left + wa_width as i32 - panel_width as i32;
+                            let y = wa_top;
+                            let _ = settings_window.set_position(tauri::Position::Physical(
+                                tauri::PhysicalPosition::new(x, y),
+                            ));
+                            let _ = settings_window.set_size(tauri::Size::Physical(
+                                tauri::PhysicalSize::new(panel_width, wa_height),
+                            ));
+                        } else {
+                            // Fallback: use monitor size
+                            let screen_w = (size.width as f64 / scale) as i32;
+                            let x = screen_w - panel_width as i32;
+                            let _ = settings_window.set_position(tauri::Position::Physical(
+                                tauri::PhysicalPosition::new(x, 0),
+                            ));
+                            let _ = settings_window.set_size(tauri::Size::Physical(
+                                tauri::PhysicalSize::new(panel_width, size.height),
+                            ));
+                        }
+                    }
+                    #[cfg(not(windows))]
+                    {
+                        let screen_w = (size.width as f64 / scale) as i32;
+                        let x = screen_w - panel_width as i32;
+                        let _ = settings_window.set_position(tauri::Position::Physical(
+                            tauri::PhysicalPosition::new(x, 0),
+                        ));
+                        let _ = settings_window.set_size(tauri::Size::Physical(
+                            tauri::PhysicalSize::new(panel_width, size.height),
+                        ));
+                    }
+                }
+
+                // Handle settings window close → minimize to tray
+                let app_handle3 = app.handle().clone();
                 settings_window.on_window_event(move |event| {
                     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                         api.prevent_close();

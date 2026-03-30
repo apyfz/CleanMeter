@@ -14,6 +14,7 @@ export function NetSection({ isHorizontal }: NetSectionProps) {
   const { downHistory, upHistory } = useNetworkHistory();
   const sensors = sensorData?.sensors ?? [];
 
+  const valueFontSize = settings.fontSizeValue ?? 24;
   const { downRate, upRate } = settings.sensors;
   const showNetGraph = settings.netGraph;
 
@@ -43,7 +44,7 @@ export function NetSection({ isHorizontal }: NetSectionProps) {
               strokeLinejoin="round"
             />
           </svg>
-          <span className="text-[10px] text-white/80 tabular-nums">
+          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
             {formatNetworkRate(downVal)}
           </span>
         </div>
@@ -66,7 +67,7 @@ export function NetSection({ isHorizontal }: NetSectionProps) {
               strokeLinejoin="round"
             />
           </svg>
-          <span className="text-[10px] text-white/80 tabular-nums">
+          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
             {formatNetworkRate(upVal)}
           </span>
         </div>

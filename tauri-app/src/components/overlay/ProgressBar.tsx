@@ -1,5 +1,6 @@
 import { getBoundaryColor, formatValue } from "@/lib/utils";
 import type { Boundaries } from "@/lib/types";
+import { useSettingsStore } from "@/stores/settings-store";
 
 interface ProgressBarProps {
   value: number;
@@ -16,6 +17,8 @@ export function ProgressBar({
   unit,
   boundaries,
 }: ProgressBarProps) {
+  const valueFontSize = useSettingsStore((s) => s.settings.fontSizeValue ?? 24);
+  const labelFontSize = useSettingsStore((s) => s.settings.fontSizeLabel ?? 12);
   const percentage = Math.min(value / max, 1);
   const filledBars = Math.round(percentage * 10);
   const color = boundaries
@@ -40,10 +43,10 @@ export function ProgressBar({
         })}
       </div>
       <div className="flex items-baseline gap-0.5">
-        <span className="text-xs font-medium text-white">
+        <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
           {formatValue(value)}
         </span>
-        <span className="text-[9px] text-white/50">{unit}</span>
+        <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "rgba(255,255,255,0.7)" }}>{unit}</span>
       </div>
     </div>
   );

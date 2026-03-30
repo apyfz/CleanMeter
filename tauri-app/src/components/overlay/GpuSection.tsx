@@ -13,6 +13,8 @@ export function GpuSection({ isHorizontal }: GpuSectionProps) {
   const sensorData = useSettingsStore((s) => s.sensorData);
   const sensors = sensorData?.sensors ?? [];
 
+  const valueFontSize = settings.fontSizeValue ?? 24;
+  const labelFontSize = settings.fontSizeLabel ?? 12;
   const { gpuTemp, gpuUsage, vramUsage, totalVramUsed, gpuConsumption } =
     settings.sensors;
   const progressType = settings.progressType;
@@ -66,10 +68,10 @@ export function GpuSection({ isHorizontal }: GpuSectionProps) {
       )}
       {gpuConsumption.isEnabled && (
         <div className="flex items-baseline gap-0.5">
-          <span className="text-xs font-medium text-white tabular-nums">
+          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
             {formatValue(gpuPowerVal)}
           </span>
-          <span className="text-[9px] text-white/50">W</span>
+          <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "rgba(255,255,255,0.7)" }}>W</span>
         </div>
       )}
     </Pill>

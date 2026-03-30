@@ -82,6 +82,8 @@ export interface OverlaySettings {
   isPositionLocked: boolean;
   opacity: number;
   pillOpacity: number;
+  fontSizeValue: number;
+  fontSizeLabel: number;
   pollingRate: number;
   isLoggingEnabled: boolean;
   sensors: SensorsConfig;
@@ -142,6 +144,8 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   isPositionLocked: false,
   opacity: 1.0,
   pillOpacity: 0.3,
+  fontSizeValue: 24,
+  fontSizeLabel: 12,
   pollingRate: 500,
   isLoggingEnabled: false,
   sensors: {

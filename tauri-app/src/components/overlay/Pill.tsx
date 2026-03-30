@@ -8,6 +8,7 @@ interface PillProps {
 
 export function Pill({ title, isHorizontal, children }: PillProps) {
   const pillOpacity = useSettingsStore((s) => s.settings.pillOpacity ?? 0.3);
+  const labelSize = useSettingsStore((s) => s.settings.fontSizeLabel ?? 12);
 
   if (isHorizontal) {
     return (
@@ -15,7 +16,7 @@ export function Pill({ title, isHorizontal, children }: PillProps) {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: 8,
+          gap: 16,
           background: `rgba(0,0,0,${pillOpacity})`,
           borderRadius: 9999,
           padding: "4px 12px",
@@ -24,10 +25,10 @@ export function Pill({ title, isHorizontal, children }: PillProps) {
           whiteSpace: "nowrap",
         }}
       >
-        <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <span style={{ fontSize: labelSize, fontWeight: 500, color: "rgba(255,255,255,0.7)" }}>
           {title}
         </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>{children}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>{children}</div>
       </div>
     );
   }
@@ -43,11 +44,11 @@ export function Pill({ title, isHorizontal, children }: PillProps) {
         padding: 12,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 10, fontWeight: 600, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <span style={{ fontSize: labelSize, fontWeight: 500, color: "rgba(255,255,255,0.7)" }}>
           {title}
         </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1 }}>{children}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flex: 1 }}>{children}</div>
       </div>
     </div>
   );
