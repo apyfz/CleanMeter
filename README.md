@@ -43,6 +43,6 @@ Download the latest installer from [Releases](https://github.com/apyfz/CleanMete
 
 ---
 
-<p align="center">
-  Made by <a href="https://instagram.com/apyfz">@apyfz</a>
+<p align="left">
+  by <a href="https://instagram.com/apyfz">@apyfz</a>
 </p>
