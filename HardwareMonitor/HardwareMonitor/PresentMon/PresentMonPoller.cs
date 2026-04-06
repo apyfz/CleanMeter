@@ -87,13 +87,17 @@ public class PresentMonPoller(ILogger logger)
             if (float.TryParse(parts[9], NumberStyles.Any, _cultureInfo, out var frametime))
             {
                 Frametime.Value = frametime;
-                // Convert frametime (ms) to FPS for the Displayed sensor
-                Displayed.Value = frametime > 0 ? 1000f / frametime : 0;
             }
 
             if (float.TryParse(parts[13], NumberStyles.Any, _cultureInfo, out var gpuTime))
             {
                 Presented.Value = gpuTime > 0 ? 1000f / gpuTime : 0;
+            }
+
+            // Column 17 = MsBetweenDisplayChange — convert to displayed FPS
+            if (float.TryParse(parts[17], NumberStyles.Any, _cultureInfo, out var displayed))
+            {
+                Displayed.Value = displayed > 0 ? 1000f / displayed : 0;
             }
         }
     }

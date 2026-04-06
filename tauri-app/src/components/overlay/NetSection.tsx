@@ -38,13 +38,13 @@ export function NetSection({ isHorizontal }: NetSectionProps) {
           >
             <path
               d="M5 2V8M5 8L2.5 5.5M5 8L7.5 5.5"
-              stroke="#22d3ee"
+              stroke="var(--overlay-arrow-down)"
               strokeWidth="1.2"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
-          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
+          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "var(--overlay-text)", fontFamily: "Inter", minWidth: "5.5em", textAlign: "right" }} className="tabular-nums">
             {formatNetworkRate(downVal)}
           </span>
         </div>
@@ -61,13 +61,13 @@ export function NetSection({ isHorizontal }: NetSectionProps) {
           >
             <path
               d="M5 8V2M5 2L2.5 4.5M5 2L7.5 4.5"
-              stroke="#7c3aed"
+              stroke="var(--overlay-arrow-up)"
               strokeWidth="1.2"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
-          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
+          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "var(--overlay-text)", fontFamily: "Inter", minWidth: "5.5em", textAlign: "right" }} className="tabular-nums">
             {formatNetworkRate(upVal)}
           </span>
         </div>

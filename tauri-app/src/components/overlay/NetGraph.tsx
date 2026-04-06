@@ -34,11 +34,12 @@ export function NetGraph({ downHistory, upHistory, width, height }: NetGraphProp
     const allValues = [...downHistory, ...upHistory];
     const maxVal = Math.max(...allValues, 1);
 
+    const textColor = getComputedStyle(canvas).getPropertyValue("--overlay-text").trim() || "white";
     if (downHistory.length > 1) {
-      drawLine(ctx, downHistory, maxVal, width, height, "white");
+      drawLine(ctx, downHistory, maxVal, width, height, textColor);
     }
     if (upHistory.length > 1) {
-      drawLine(ctx, upHistory, maxVal, width, height, "white");
+      drawLine(ctx, upHistory, maxVal, width, height, textColor);
     }
   }, [downHistory, upHistory, width, height]);
 

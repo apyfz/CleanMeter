@@ -1,3 +1,4 @@
+import { Caption1, tokens } from "@fluentui/react-components";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { SensorSection } from "@/components/ui/SensorSection";
 import { Select } from "@/components/ui/Select";
@@ -29,17 +30,42 @@ export function FpsSection() {
         checked={frametime.isEnabled}
         onChange={(v) => updateSensor("frametime", { isEnabled: v })}
       />
+      <Caption1
+        style={{
+          color: tokens.colorNeutralForeground4,
+          display: "block",
+          marginTop: 4,
+          lineHeight: 1.4,
+        }}
+      >
+        FPS, frametime, and the graph only update while an app is actively
+        rendering. A flat line on the graph means smooth performance, spikes
+        indicate stutters. Values may freeze when the tracked app is minimized
+        or closed.
+      </Caption1>
       {presentMonApps.length > 0 && (
         <div className="mt-2">
+          <Caption1
+            style={{
+              color: tokens.colorNeutralForeground4,
+              display: "block",
+              marginBottom: 4,
+            }}
+          >
+            Tracks the active app automatically. To monitor a specific app, select it below:
+          </Caption1>
           <Select
-            label="Monitored app:"
+            label=""
             value={framerate.customReadingId}
             onChange={(v) => updateSensor("framerate", { customReadingId: v })}
-            options={presentMonApps.map((app) => ({
-              value: app,
-              label: app,
-            }))}
-            placeholder="Select app..."
+            options={[
+              { value: "", label: "Auto (active app)" },
+              ...presentMonApps.map((app) => ({
+                value: app,
+                label: app,
+              })),
+            ]}
+            placeholder="Auto (active app)"
           />
         </div>
       )}

@@ -68,10 +68,10 @@ export function GpuSection({ isHorizontal }: GpuSectionProps) {
       )}
       {gpuConsumption.isEnabled && (
         <div className="flex items-baseline gap-0.5">
-          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
+          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "var(--overlay-text)", fontFamily: "Inter", minWidth: "3em", textAlign: "right", display: "inline-block" }} className="tabular-nums">
             {formatValue(gpuPowerVal)}
           </span>
-          <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "rgba(255,255,255,0.7)" }}>W</span>
+          <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "var(--overlay-text-muted)" }}>W</span>
         </div>
       )}
     </Pill>

@@ -33,7 +33,7 @@ export function FrametimeGraph({ history, width, height }: FrametimeGraphProps) 
     const maxVal = Math.max(...history, 1);
     const stepX = width / (history.length - 1);
 
-    ctx.strokeStyle = "white";
+    ctx.strokeStyle = getComputedStyle(canvas).getPropertyValue("--overlay-text").trim() || "white";
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
     ctx.lineCap = "round";

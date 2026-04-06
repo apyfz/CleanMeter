@@ -6,7 +6,8 @@ import { Select } from "@/components/ui/Select";
 import { useSettingsStore } from "@/stores/settings-store";
 import { POLLING_RATES } from "@/lib/types";
 import { Footer } from "./Footer";
-import { launchHardwareMonitor } from "@/lib/tauri";
+import { launchHardwareMonitor, setAutoStart, getAutoStart } from "@/lib/tauri";
+import { useEffect, useState } from "react";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -30,6 +31,16 @@ export function AppSettingsTab() {
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const updatePreferences = useSettingsStore((s) => s.updatePreferences);
   const clearSettings = useSettingsStore((s) => s.clearSettings);
+  const [autoStart, setAutoStartState] = useState(false);
+
+  useEffect(() => {
+    getAutoStart().then((v) => { if (v !== undefined) setAutoStartState(v); }).catch(() => {});
+  }, []);
+
+  const handleAutoStart = (enabled: boolean) => {
+    setAutoStartState(enabled);
+    setAutoStart(enabled).catch(() => setAutoStartState(!enabled));
+  };
 
   return (
     <div className="flex flex-col overflow-y-auto h-full" style={{ padding: 16, gap: 16 }}>
@@ -37,20 +48,9 @@ export function AppSettingsTab() {
         <div className="flex flex-col gap-0.5">
           <Checkbox
             label="Start with Windows"
-            checked={false}
-            onChange={() => {}}
-            disabled
+            checked={autoStart}
+            onChange={handleAutoStart}
           />
-          <Caption1
-            style={{
-              marginLeft: 32,
-              marginTop: -2,
-              marginBottom: 4,
-              color: tokens.colorNeutralForeground4,
-            }}
-          >
-            Temporarily disabled
-          </Caption1>
           <Checkbox
             label="Start Minimized"
             checked={preferences.startMinimized}

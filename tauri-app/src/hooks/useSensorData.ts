@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { onSensorData, onPresentMonApps, onPipeStatus } from "@/lib/tauri";
 import { useSettingsStore } from "@/stores/settings-store";
 import { SensorType } from "@/lib/types";
@@ -37,6 +37,7 @@ export function useFrametimeHistory(maxPoints = 30) {
   const sensorData = useSettingsStore((s) => s.sensorData);
   const bufferRef = useRef<number[]>([]);
   const prevData = useRef<HardwareMonitorData | null>(null);
+  const [history, setHistory] = useState<number[]>([]);
 
   if (sensorData && sensorData !== prevData.current) {
     prevData.current = sensorData;
@@ -48,10 +49,11 @@ export function useFrametimeHistory(maxPoints = 30) {
       const buf = bufferRef.current;
       buf.push(frametime.value);
       if (buf.length > maxPoints) buf.shift();
+      setHistory([...buf]);
     }
   }
 
-  return bufferRef.current;
+  return history;
 }
 
 /** Hook for overlay — keeps a rolling buffer of network rates */
@@ -60,6 +62,7 @@ export function useNetworkHistory(maxPoints = 30) {
   const downRef = useRef<number[]>([]);
   const upRef = useRef<number[]>([]);
   const prevData = useRef<HardwareMonitorData | null>(null);
+  const [histories, setHistories] = useState<{ downHistory: number[]; upHistory: number[] }>({ downHistory: [], upHistory: [] });
 
   if (sensorData && sensorData !== prevData.current) {
     prevData.current = sensorData;
@@ -71,15 +74,21 @@ export function useNetworkHistory(maxPoints = 30) {
       (s) => s.sensorType === SensorType.Throughput && s.name.toLowerCase().includes("upload")
     );
 
+    let changed = false;
     if (down) {
       downRef.current.push(down.value);
       if (downRef.current.length > maxPoints) downRef.current.shift();
+      changed = true;
     }
     if (up) {
       upRef.current.push(up.value);
       if (upRef.current.length > maxPoints) upRef.current.shift();
+      changed = true;
+    }
+    if (changed) {
+      setHistories({ downHistory: [...downRef.current], upHistory: [...upRef.current] });
     }
   }
 
-  return { downHistory: downRef.current, upHistory: upRef.current };
+  return histories;
 }

@@ -53,10 +53,10 @@ export function RamSection({ isHorizontal }: RamSectionProps) {
         />
       ) : (
         <div className="flex items-baseline gap-0.5">
-          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
+          <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "var(--overlay-text)", fontFamily: "Inter", minWidth: "3.5em", textAlign: "right", display: "inline-block" }} className="tabular-nums">
             {ramUsedGB > 0 ? formatValue(ramUsedGB, 1) : formatValue(ramPercent, 0)}
           </span>
-          <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "rgba(255,255,255,0.7)" }}>{ramUsedGB > 0 ? "GB" : "%"}</span>
+          <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "var(--overlay-text-muted)" }}>{ramUsedGB > 0 ? "GB" : "%"}</span>
         </div>
       )}
     </Pill>

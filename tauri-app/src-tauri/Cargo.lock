@@ -517,7 +517,7 @@ dependencies = [
 
 [[package]]
 name = "cleanmeter"
-version = "2.0.0"
+version = "2.1.0"
 dependencies = [
  "byteorder",
  "dirs",
@@ -536,6 +536,7 @@ dependencies = [
  "tauri-plugin-updater",
  "tokio",
  "windows 0.58.0",
+ "winreg",
 ]
 
 [[package]]

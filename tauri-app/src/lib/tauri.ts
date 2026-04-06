@@ -77,6 +77,8 @@ export const getAppVersion = () =>
   isBrowser ? Promise.resolve("2.0.0-preview") : safeInvoke<string>("get_app_version");
 export const grantAdminConsent = () => safeInvoke("grant_admin_consent");
 export const launchHardwareMonitor = () => safeInvoke("launch_hardware_monitor");
+export const setAutoStart = (enabled: boolean) => safeInvoke("set_auto_start", { enabled });
+export const getAutoStart = () => isBrowser ? Promise.resolve(false) : safeInvoke<boolean>("get_auto_start");
 
 // ─── Event Listeners ────────────────────────────────────────────
 

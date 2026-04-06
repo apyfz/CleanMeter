@@ -290,6 +290,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   setSensorData: (data) => {
     const state = get();
+    const wasNull = state.sensorData === null;
     set({ sensorData: data });
     // Auto-select sensor IDs the first time data arrives (if any are still empty)
     const patch = autoSelectSensors(data, state.settings);
@@ -298,6 +299,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       const newSettings = { ...state.settings, sensors: newSensors };
       set({ settings: newSettings });
       debouncedSave(newSettings);
+    }
+    // Auto-show overlay on first data arrival
+    if (wasNull && !state.overlayVisible) {
+      set({ overlayVisible: true });
+      tauri.setOverlayVisible(true);
     }
   },
   setPresentMonApps: (apps) => set({ presentMonApps: apps }),

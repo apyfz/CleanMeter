@@ -35,7 +35,7 @@ export function ProgressRing({
           cy="12"
           r={radius}
           fill="none"
-          stroke="white"
+          stroke="var(--overlay-text)"
           strokeOpacity="0.15"
           strokeWidth="3"
         />
@@ -53,10 +53,10 @@ export function ProgressRing({
         />
       </svg>
       <div className="flex items-baseline gap-0.5">
-        <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
+        <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "var(--overlay-text)", fontFamily: "Inter" }} className="tabular-nums">
           {formatValue(value)}
         </span>
-        <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "rgba(255,255,255,0.7)" }}>{unit}</span>
+        <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "var(--overlay-text-muted)" }}>{unit}</span>
       </div>
     </div>
   );

@@ -27,30 +27,28 @@ export function FpsSection({ isHorizontal }: FpsSectionProps) {
         (s) => s.name.toLowerCase().includes("fps") || s.name.toLowerCase().includes("framerate")
       );
 
-  // Clamp FPS to a sane range — PresentMon can spike on single-frame anomalies
-  const rawFps = fpsSensor?.value ?? 0;
-  const fpsValue = rawFps > 500 ? 0 : rawFps;
+  const fpsValue = Math.round(fpsSensor?.value ?? 0);
   const lastFrametime = frametimeHistory.length > 0 ? frametimeHistory[frametimeHistory.length - 1] : 0;
 
   return (
     <Pill title="FPS" isHorizontal={isHorizontal}>
       {framerate.isEnabled && (
-        <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
+        <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "var(--overlay-text)", fontFamily: "Inter", minWidth: "3em", textAlign: "right", display: "inline-block" }} className="tabular-nums">
           {formatValue(fpsValue)}
         </span>
       )}
       {frametime.isEnabled && frametimeHistory.length > 2 && (
-        <>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <FrametimeGraph
             history={frametimeHistory}
             width={isHorizontal ? 60 : 80}
             height={isHorizontal ? 20 : 24}
           />
-          <span className="tabular-nums" style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }}>
+          <span className="tabular-nums" style={{ fontSize: valueFontSize, fontWeight: 400, color: "var(--overlay-text)", fontFamily: "Inter", minWidth: "4em", textAlign: "right", display: "inline-block" }}>
             {formatValue(lastFrametime, 1)}
           </span>
-          <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "rgba(255,255,255,0.7)" }}>ms</span>
-        </>
+          <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "var(--overlay-text-muted)" }}>ms</span>
+        </div>
       )}
     </Pill>
   );

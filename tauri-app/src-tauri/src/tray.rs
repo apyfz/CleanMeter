@@ -46,13 +46,27 @@ pub fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
             let _ = app.emit("hotkey", "toggle-overlay");
         }
         "quit" => {
-            // Kill HardwareMonitor child process before exiting
+            // Kill HardwareMonitor child process
             if let Some(mutex) = app.try_state::<std::sync::Mutex<Option<std::process::Child>>>() {
                 if let Ok(mut guard) = mutex.lock() {
                     if let Some(mut child) = guard.take() {
                         let _ = child.kill();
+                        let _ = child.wait();
                     }
                 }
+            }
+            // Also kill any orphaned HardwareMonitor/PresentMon processes
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                let _ = std::process::Command::new("taskkill")
+                    .args(["/f", "/im", "HardwareMonitor.exe"])
+                    .creation_flags(0x08000000)
+                    .status();
+                let _ = std::process::Command::new("taskkill")
+                    .args(["/f", "/im", "presentmon.exe"])
+                    .creation_flags(0x08000000)
+                    .status();
             }
             app.exit(0);
         }

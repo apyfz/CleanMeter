@@ -17,43 +17,20 @@ export function Footer() {
     <div className="flex flex-col gap-2" style={{ marginTop: 4 }}>
       <Button
         appearance="outline"
-        onClick={() => openUrl("https://github.com/Danil0v3s/CleanMeter")}
+        onClick={() => openUrl("https://github.com/apyfz/CleanMeter")}
         style={{ width: "100%" }}
       >
-        Check the latest build
+        GitHub
       </Button>
-
-      <div className="flex gap-2">
-        <Button
-          appearance="outline"
-          onClick={() => openUrl("https://discord.gg/phqwe89cvE")}
-          style={{ flex: 1 }}
-        >
-          Discord
-        </Button>
-        <Button
-          appearance="outline"
-          onClick={() => openUrl("https://ko-fi.com/danil0v3s")}
-          style={{ flex: 1 }}
-        >
-          Ko-fi
-        </Button>
-      </div>
 
       <div
         className="flex items-center justify-between"
         style={{ padding: "6px 0", color: tokens.colorNeutralForeground4 }}
       >
         <Caption1>v{appVersion}</Caption1>
-        <div className="flex gap-2 items-center">
-          <Link onClick={() => openUrl("https://github.com/Danil0v3s")} style={{ fontSize: 11 }}>
-            Danil0v3s
-          </Link>
-          <Caption1>&middot;</Caption1>
-          <Link onClick={() => openUrl("https://www.instagram.com/mars.designs")} style={{ fontSize: 11 }}>
-            Mars
-          </Link>
-        </div>
+        <Link onClick={() => openUrl("https://instagram.com/apyfz")} style={{ fontSize: 11 }}>
+          @apyfz
+        </Link>
       </div>
     </div>
   );

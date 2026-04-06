@@ -1,6 +1,6 @@
 [package]
 name = "cleanmeter"
-version = "2.0.0"
+version = "2.1.0"
 description = "Gaming performance overlay"
 authors = ["CleanMeter"]
 edition = "2021"
@@ -28,6 +28,8 @@ byteorder = "1"
 log = "0.4"
 env_logger = "0.11"
 dirs = "6"
+
+winreg = "0.55"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.58", features = [

@@ -266,6 +266,8 @@ pub fn run() {
             commands::refresh_present_mon_apps,
             commands::set_polling_rate,
             commands::check_dotnet_runtime,
+            commands::set_auto_start,
+            commands::get_auto_start,
             commands::get_monitors,
             commands::get_app_version,
             commands::grant_admin_consent,

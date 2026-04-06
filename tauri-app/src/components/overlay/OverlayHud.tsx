@@ -8,6 +8,9 @@ import { NetSection } from "./NetSection";
 export function OverlayHud() {
   const settings = useSettingsStore((s) => s.settings);
   const isHorizontal = settings.isHorizontal;
+  const dark = settings.isDarkTheme !== false;
+  const bg = dark ? "rgba(30,30,30,0.7)" : "rgba(255,255,255,0.7)";
+  const border = dark ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(0,0,0,0.08)";
 
   return (
     <div
@@ -17,19 +20,24 @@ export function OverlayHud() {
         gap: 8,
         padding: 6,
         opacity: settings.opacity,
-        border: "1px solid rgba(255,255,255,0.08)",
+        border,
+        "--overlay-text": dark ? "#fff" : "#000",
+        "--overlay-text-muted": dark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)",
+        "--overlay-track": dark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.1)",
+        "--overlay-arrow-down": dark ? "#22d3ee" : "#0891b2",
+        "--overlay-arrow-up": dark ? "#a78bfa" : "#6d28d9",
         ...(isHorizontal
           ? {
               flexDirection: "row" as const,
               alignItems: "center",
               width: "fit-content",
               borderRadius: 9999,
-              background: "rgba(30,30,30,0.7)",
+              background: bg,
             }
           : {
               flexDirection: "column" as const,
               borderRadius: 12,
-              background: "rgba(30,30,30,0.7)",
+              background: bg,
               width: "100%",
             }),
       }}

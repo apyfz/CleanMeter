@@ -36,17 +36,17 @@ export function ProgressBar({
               className="h-[2px] w-full rounded-sm"
               style={{
                 backgroundColor:
-                  barIndex < filledBars ? color : "rgba(255,255,255,0.15)",
+                  barIndex < filledBars ? color : "var(--overlay-track, rgba(255,255,255,0.15))",
               }}
             />
           );
         })}
       </div>
       <div className="flex items-baseline gap-0.5">
-        <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "#fff", fontFamily: "Inter" }} className="tabular-nums">
+        <span style={{ fontSize: valueFontSize, fontWeight: 400, color: "var(--overlay-text)", fontFamily: "Inter" }} className="tabular-nums">
           {formatValue(value)}
         </span>
-        <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "rgba(255,255,255,0.7)" }}>{unit}</span>
+        <span style={{ fontSize: labelFontSize, fontWeight: 400, color: "var(--overlay-text-muted)" }}>{unit}</span>
       </div>
     </div>
   );

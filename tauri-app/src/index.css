@@ -13,7 +13,7 @@
   --purple-500: #7c3aed;
   --cyan-400: #22d3ee;
 
-  --color-success: var(--green-700);
+  --color-success: var(--green-500);
   --color-warning: var(--yellow-700);
   --color-danger: var(--red-700);
 
@@ -28,7 +28,7 @@
 }
 
 [data-theme="dark"] {
-  --color-success: var(--green-100);
+  --color-success: var(--green-500);
   --color-warning: var(--yellow-400);
   --color-danger: var(--red-600);
 }
