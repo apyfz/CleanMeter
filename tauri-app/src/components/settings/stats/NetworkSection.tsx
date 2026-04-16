@@ -34,7 +34,7 @@ export function NetworkSection({ sensors, hardwares }: NetworkSectionProps) {
           const prev = prevState.current;
           updateSensor("downRate", { isEnabled: prev ? prev.downRate : true });
           updateSensor("upRate", { isEnabled: prev ? prev.upRate : true });
-          updateSettings({ netGraph: prev ? prev.netGraph : false });
+          updateSettings({ netGraph: prev ? prev.netGraph : true });
         }
       }}
     >
