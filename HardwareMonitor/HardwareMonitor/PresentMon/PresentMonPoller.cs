@@ -124,6 +124,11 @@ public class PresentMonPoller(ILogger logger)
 
     public void SetSelectedApp(string appName)
     {
+        // Drop prior app's timestamps so the 1s window doesn't inflate the
+        // new app's FPS for the first second after a switch.
+        _presentedTimestamps.Clear();
+        _displayedTimestamps.Clear();
+
         if (appName == "Auto")
         {
             _currentSelectedApp = NO_SELECTED_APP;
