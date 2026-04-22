@@ -25,6 +25,15 @@ public class PresentMonPoller(ILogger logger)
 
     private string _currentSelectedApp = NO_SELECTED_APP;
 
+    // Rolling 1-second timestamp windows for frame-rate aggregation.
+    // Each PresentMon CSV row is one frame; counting how many landed in the
+    // last 1000ms gives classic frames-per-second, matching Afterburner/RTSS.
+    // Without this, Value would be 1000/single_frametime — per-frame
+    // instantaneous FPS, which is extremely noisy.
+    private const int FPS_WINDOW_MS = 1000;
+    private readonly Queue<long> _presentedTimestamps = new();
+    private readonly Queue<long> _displayedTimestamps = new();
+
     public async void Start(CancellationToken stoppingToken)
     {
         _cultureInfo.NumberFormat.NumberDecimalSeparator = ".";
@@ -89,17 +98,28 @@ public class PresentMonPoller(ILogger logger)
                 Frametime.Value = frametime;
             }
 
-            if (float.TryParse(parts[13], NumberStyles.Any, _cultureInfo, out var gpuTime))
-            {
-                Presented.Value = gpuTime > 0 ? 1000f / gpuTime : 0;
-            }
+            var nowMs = Environment.TickCount64;
 
-            // Column 17 = MsBetweenDisplayChange — convert to displayed FPS
-            if (float.TryParse(parts[17], NumberStyles.Any, _cultureInfo, out var displayed))
+            // Every CSV row is a present event — count them over 1000ms.
+            _presentedTimestamps.Enqueue(nowMs);
+            TrimWindow(_presentedTimestamps, nowMs);
+            Presented.Value = _presentedTimestamps.Count;
+
+            // Only count as a displayed frame when the scan-out interval is
+            // non-zero (dropped frames report 0 here).
+            if (float.TryParse(parts[17], NumberStyles.Any, _cultureInfo, out var displayed)
+                && displayed > 0)
             {
-                Displayed.Value = displayed > 0 ? 1000f / displayed : 0;
+                _displayedTimestamps.Enqueue(nowMs);
             }
+            TrimWindow(_displayedTimestamps, nowMs);
+            Displayed.Value = _displayedTimestamps.Count;
         }
+    }
+
+    private static void TrimWindow(Queue<long> q, long nowMs)
+    {
+        while (q.Count > 0 && nowMs - q.Peek() > FPS_WINDOW_MS) q.Dequeue();
     }
 
     public void SetSelectedApp(string appName)
