@@ -64,6 +64,9 @@ export function GpuSection({ sensors, hardwares }: Props) {
       updateSensor("gpuUsage", { isEnabled: false });
       updateSensor("gpuTemp", { isEnabled: false });
       updateSensor("vramUsage", { isEnabled: false });
+      // Clear removed-from-UI sensors so upgraders don't see ghost metrics.
+      updateSensor("totalVramUsed", { isEnabled: false });
+      updateSensor("gpuConsumption", { isEnabled: false });
     } else {
       const prev = prevState.current;
       updateSensor("gpuUsage", { isEnabled: prev ? prev.gpuUsage : true });

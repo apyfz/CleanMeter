@@ -41,6 +41,8 @@ export function CpuSection({ sensors, hardwares }: Props) {
       prevState.current = { cpuUsage: cpuUsage.isEnabled, cpuTemp: cpuTemp.isEnabled };
       updateSensor("cpuUsage", { isEnabled: false });
       updateSensor("cpuTemp", { isEnabled: false });
+      // Clear removed-from-UI sensors so upgraders don't see ghost metrics.
+      updateSensor("cpuConsumption", { isEnabled: false });
     } else {
       const prev = prevState.current;
       updateSensor("cpuUsage", { isEnabled: prev ? prev.cpuUsage : true });

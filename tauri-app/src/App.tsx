@@ -35,7 +35,7 @@ function MonitoringBanner() {
   if (!showBanner) return null;
 
   return (
-    <div className="border-b border-yellow-400 bg-yellow-50 px-4 py-2.5 text-[13px] leading-snug text-yellow-900">
+    <div className="border-b border-yellow-400 bg-yellow-50 px-4 py-2.5 text-[13px] leading-snug text-yellow-900 dark:border-yellow-700 dark:bg-yellow-950 dark:text-yellow-200">
       <strong>Monitoring not connected.</strong>
       {dotnetMissing ? (
         <span>
@@ -44,7 +44,7 @@ function MonitoringBanner() {
             href="https://dotnet.microsoft.com/en-us/download/dotnet/8.0"
             target="_blank"
             rel="noreferrer"
-            className="text-blue-600 underline"
+            className="text-blue-600 underline dark:text-blue-400"
           >
             Download it here
           </a>

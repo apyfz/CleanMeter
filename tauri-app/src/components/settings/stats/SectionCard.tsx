@@ -65,7 +65,12 @@ export function SubCollapsible({
   defaultOpen?: boolean;
   children?: React.ReactNode;
 }) {
-  const [open, setOpen] = React.useState(defaultOpen);
+  const [open, setOpen] = React.useState(defaultOpen && checked);
+  // Collapse automatically when the sensor is unchecked; the expanded detail
+  // is only meaningful when the sensor is active.
+  React.useEffect(() => {
+    if (!checked && open) setOpen(false);
+  }, [checked, open]);
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="flex flex-col gap-2">
       <div className="flex items-center gap-2">

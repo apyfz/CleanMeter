@@ -52,35 +52,37 @@ export function FpsSection() {
         </label>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <Select
-          value={framerate.customReadingId || "__auto__"}
-          onValueChange={(v) =>
-            updateSensor("framerate", { customReadingId: v === "__auto__" ? "" : v })
-          }
-        >
-          <SelectTrigger className="h-10 rounded-[8px] text-[14px]">
-            <span className="flex items-center gap-2">
-              <span className="text-[14px] font-normal text-muted-foreground">Monitor app:</span>
-              <SelectValue placeholder="Auto" />
+      {presentMonApps.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <Select
+            value={framerate.customReadingId || "__auto__"}
+            onValueChange={(v) =>
+              updateSensor("framerate", { customReadingId: v === "__auto__" ? "" : v })
+            }
+          >
+            <SelectTrigger className="h-10 rounded-[8px] text-[14px]">
+              <span className="flex items-center gap-2">
+                <span className="text-[14px] font-normal text-muted-foreground">Monitor app:</span>
+                <SelectValue placeholder="Auto" />
+              </span>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__auto__">Auto</SelectItem>
+              {presentMonApps.map((app) => (
+                <SelectItem key={app} value={app}>
+                  {app}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="flex items-center gap-1">
+            <Info className="size-4 text-muted-foreground" strokeWidth={2} />
+            <span className="text-[12px] font-medium text-muted-foreground">
+              Apps are auto updated every 10 seconds.
             </span>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__auto__">Auto</SelectItem>
-            {presentMonApps.map((app) => (
-              <SelectItem key={app} value={app}>
-                {app}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="flex items-center gap-1">
-          <Info className="size-4 text-muted-foreground" strokeWidth={2} />
-          <span className="text-[12px] font-medium text-muted-foreground">
-            Apps are auto updated every 10 seconds.
-          </span>
+          </div>
         </div>
-      </div>
+      )}
     </SectionCard>
   );
 }
