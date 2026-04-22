@@ -151,7 +151,7 @@ export const DEFAULT_SETTINGS: OverlaySettings = {
   themeMode: "light",
   temperatureUnit: "C",
   isHorizontal: true,
-  useCustomPosition: false,
+  useCustomPosition: true,
   positionIndex: 4,
   selectedDisplayIndex: 0,
   netGraph: false,
