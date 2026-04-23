@@ -145,15 +145,6 @@ function debouncedSave(settings: OverlaySettings) {
   saveTimer = setTimeout(() => tauri.saveSettings(settings), 300);
 }
 
-async function moveOverlayToMonitor(settings: OverlaySettings) {
-  const monitors = await tauri.getMonitors();
-  if (!monitors || monitors.length === 0) return;
-  const monitor = monitors[settings.selectedDisplayIndex] ?? monitors[0];
-  // Move window to the monitor's origin and resize to fill it
-  tauri.setOverlayPosition(monitor.x, monitor.y);
-  tauri.setOverlaySize(monitor.width, monitor.height);
-}
-
 interface SettingsStore {
   // State
   settings: OverlaySettings;
@@ -204,27 +195,17 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   loadSettings: async () => {
     try {
       const saved = await tauri.getSettings();
-      if (saved) {
-        // Merge so any new fields added after this install still get defaults
-        // (e.g. themeMode, useCustomPosition, labelFontWeight).
-        const settings: OverlaySettings = {
-          ...DEFAULT_SETTINGS,
-          ...saved,
-          sensors: { ...DEFAULT_SETTINGS.sensors, ...(saved.sensors ?? {}) },
-        };
-        set({ settings });
-        // Click-through must be OFF whenever the user wants to drag the HUD.
-        // Older installs could have a stale isPositionLocked: true that would
-        // silently disable mouse input on the overlay window.
-        tauri.setOverlayClickThrough(!settings.useCustomPosition && settings.isPositionLocked);
-        moveOverlayToMonitor(settings);
-      } else {
-        tauri.setOverlayClickThrough(false);
-        moveOverlayToMonitor(DEFAULT_SETTINGS);
-      }
+      const settings: OverlaySettings = saved
+        ? {
+            ...DEFAULT_SETTINGS,
+            ...saved,
+            sensors: { ...DEFAULT_SETTINGS.sensors, ...(saved.sensors ?? {}) },
+          }
+        : DEFAULT_SETTINGS;
+      set({ settings });
+      tauri.setOverlayClickThrough(settings.isPositionLocked);
     } catch {
-      // Use defaults — overlay starts as draggable
-      tauri.setOverlayClickThrough(false);
+      tauri.setOverlayClickThrough(DEFAULT_SETTINGS.isPositionLocked);
     }
   },
 
@@ -233,16 +214,8 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     set({ settings: newSettings });
     debouncedSave(newSettings);
 
-    // Handle side effects
-    if (patch.isHorizontal !== undefined || patch.selectedDisplayIndex !== undefined) {
-      moveOverlayToMonitor(newSettings);
-    }
-    if (patch.isPositionLocked !== undefined || patch.useCustomPosition !== undefined) {
-      // Custom position mode always needs mouse input for dragging, so force
-      // click-through off. Otherwise fall back to the explicit lock flag.
-      const shouldIgnoreCursor =
-        !newSettings.useCustomPosition && newSettings.isPositionLocked;
-      tauri.setOverlayClickThrough(shouldIgnoreCursor);
+    if (patch.isPositionLocked !== undefined) {
+      tauri.setOverlayClickThrough(newSettings.isPositionLocked);
     }
     if (patch.opacity !== undefined) {
       tauri.setOverlayOpacity(patch.opacity);
