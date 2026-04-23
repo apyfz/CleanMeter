@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { OverlayHud } from "@/components/overlay/OverlayHud";
 import { useSensorData } from "@/hooks/useSensorData";
 import { useSettingsStore } from "@/stores/settings-store";
 import {
   onSettingsChanged,
-  onHotkey,
   onSetOpacity,
   getMonitors,
   setOverlayPosition,
@@ -13,7 +13,6 @@ import {
 import type { MonitorInfo } from "@/lib/types";
 
 const EDGE_PADDING = 8;
-const DRAG_END_DEBOUNCE_MS = 200;
 
 // 0=TL, 1=TC, 2=TR, 3=BL, 4=BC, 5=BR — in physical pixels.
 function computePresetPosition(
@@ -36,7 +35,6 @@ function computePresetPosition(
 }
 
 export default function OverlayApp() {
-  const toggleOverlay = useSettingsStore((s) => s.toggleOverlay);
   const loadSettings = useSettingsStore((s) => s.loadSettings);
   const updateSettings = useSettingsStore((s) => s.updateSettings);
   const settings = useSettingsStore((s) => s.settings);
@@ -45,7 +43,9 @@ export default function OverlayApp() {
 
   const hudRef = useRef<HTMLDivElement>(null);
   const hudSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
-  const dragActive = useRef(false);
+  const dragStart = useRef<
+    { mouseX: number; mouseY: number; winX: number; winY: number; dpr: number } | null
+  >(null);
   const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
 
   useEffect(() => {
@@ -59,25 +59,24 @@ export default function OverlayApp() {
     let mounted = true;
     const unlisteners: Array<() => void> = [];
     const setup = async () => {
+      // The settings window owns the hotkey handler (useHotkey in App.tsx). If
+      // the overlay window also toggled visibility, the two independent Zustand
+      // stores could get out of sync and fight each other (see fix below).
       const u1 = await onSettingsChanged((newSettings) => {
         useSettingsStore.setState({ settings: newSettings });
       });
       if (mounted) unlisteners.push(u1); else u1();
-      const u2 = await onHotkey((action) => {
-        if (action === "toggle-overlay") toggleOverlay();
-      });
-      if (mounted) unlisteners.push(u2); else u2();
-      const u3 = await onSetOpacity((opacity) => {
+      const u2 = await onSetOpacity((opacity) => {
         document.documentElement.style.opacity = String(opacity);
       });
-      if (mounted) unlisteners.push(u3); else u3();
+      if (mounted) unlisteners.push(u2); else u2();
     };
     setup();
     return () => {
       mounted = false;
       unlisteners.forEach((u) => u());
     };
-  }, [toggleOverlay]);
+  }, []);
 
   // Keep the OS window sized to the HUD and positioned per settings. The window
   // stays as small as the HUD, so `set_ignore_cursor_events(false)` only affects
@@ -96,9 +95,8 @@ export default function OverlayApp() {
       hudSizeRef.current = { w: hudW, h: hudH };
       setOverlaySize(hudW, hudH);
 
-      // Skip position updates while the user is actively dragging — the OS
-      // owns the window position during that handoff.
-      if (dragActive.current) return;
+      // Skip position updates while the user is actively dragging.
+      if (dragStart.current) return;
 
       let x: number;
       let y: number;
@@ -119,62 +117,69 @@ export default function OverlayApp() {
     return () => ro.disconnect();
   }, [settings, monitors]);
 
+  // Manual drag. startDragging() needed an async dynamic import that lost the
+  // button-down window on Windows before WM_NCLBUTTONDOWN could post, so drag
+  // never started. Tracking screenX/screenY + setOverlayPosition is sync and
+  // deterministic.
   const onMouseDown = async (e: React.MouseEvent) => {
     if (!settings.useCustomPosition || settings.isPositionLocked) return;
     if (e.button !== 0) return;
     e.preventDefault();
-    dragActive.current = true;
-    const { getCurrentWindow } = await import("@tauri-apps/api/window");
     try {
-      await getCurrentWindow().startDragging();
+      const pos = await getCurrentWindow().outerPosition();
+      dragStart.current = {
+        mouseX: e.screenX,
+        mouseY: e.screenY,
+        winX: pos.x,
+        winY: pos.y,
+        dpr: window.devicePixelRatio || 1,
+      };
     } catch {
-      dragActive.current = false;
+      /* noop */
     }
   };
 
-  // startDragging hands mouse control to the OS, so the webview never sees
-  // mouseup. Use Tauri's onMoved + a debounce as the "drag settled" signal:
-  // persist the new position once no move events have fired for a short window.
   useEffect(() => {
-    if (monitors.length === 0) return;
-    let unlisten: (() => void) | undefined;
-    let settleTimer: ReturnType<typeof setTimeout> | null = null;
-    (async () => {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const win = getCurrentWindow();
-      unlisten = await win.onMoved(() => {
-        if (!dragActive.current) return;
-        if (settleTimer) clearTimeout(settleTimer);
-        settleTimer = setTimeout(async () => {
-          dragActive.current = false;
-          try {
-            const pos = await win.outerPosition();
-            const { w: hudW, h: hudH } = hudSizeRef.current;
-            const cx = pos.x + hudW / 2;
-            const cy = pos.y + hudH / 2;
-            let idx = settings.selectedDisplayIndex;
-            for (let i = 0; i < monitors.length; i++) {
-              const m = monitors[i];
-              if (cx >= m.x && cx < m.x + m.width && cy >= m.y && cy < m.y + m.height) {
-                idx = i;
-                break;
-              }
-            }
-            const m = monitors[idx] ?? monitors[0];
-            updateSettings({
-              selectedDisplayIndex: idx,
-              positionX: Math.round(pos.x - m.x),
-              positionY: Math.round(pos.y - m.y),
-            });
-          } catch {
-            /* noop */
+    const onMove = (e: MouseEvent) => {
+      const s = dragStart.current;
+      if (!s) return;
+      const dx = (e.screenX - s.mouseX) * s.dpr;
+      const dy = (e.screenY - s.mouseY) * s.dpr;
+      setOverlayPosition(Math.round(s.winX + dx), Math.round(s.winY + dy));
+    };
+    const onUp = async () => {
+      const s = dragStart.current;
+      if (!s) return;
+      dragStart.current = null;
+      if (monitors.length === 0) return;
+      try {
+        const pos = await getCurrentWindow().outerPosition();
+        const { w: hudW, h: hudH } = hudSizeRef.current;
+        const cx = pos.x + hudW / 2;
+        const cy = pos.y + hudH / 2;
+        let idx = settings.selectedDisplayIndex;
+        for (let i = 0; i < monitors.length; i++) {
+          const m = monitors[i];
+          if (cx >= m.x && cx < m.x + m.width && cy >= m.y && cy < m.y + m.height) {
+            idx = i;
+            break;
           }
-        }, DRAG_END_DEBOUNCE_MS);
-      });
-    })();
+        }
+        const m = monitors[idx] ?? monitors[0];
+        updateSettings({
+          selectedDisplayIndex: idx,
+          positionX: Math.round(pos.x - m.x),
+          positionY: Math.round(pos.y - m.y),
+        });
+      } catch {
+        /* noop */
+      }
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
     return () => {
-      if (unlisten) unlisten();
-      if (settleTimer) clearTimeout(settleTimer);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
     };
   }, [monitors, updateSettings, settings.selectedDisplayIndex]);
 
