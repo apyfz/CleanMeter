@@ -48,12 +48,12 @@ export default function OverlayApp() {
       mouseY: number;
       winX: number;
       winY: number;
-      dpr: number;
       lastWinX: number;
       lastWinY: number;
     } | null
   >(null);
   const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     document.documentElement.style.background = "transparent";
@@ -142,18 +142,21 @@ export default function OverlayApp() {
       mouseY: e.screenY,
       winX,
       winY,
-      dpr: window.devicePixelRatio || 1,
       lastWinX: winX,
       lastWinY: winY,
     };
+    setIsDragging(true);
   };
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       const s = dragStart.current;
       if (!s) return;
-      const dx = (e.screenX - s.mouseX) * s.dpr;
-      const dy = (e.screenY - s.mouseY) * s.dpr;
+      // Read DPR per-move so dragging across monitors with different scale
+      // factors picks up the new value as Windows fires WM_DPICHANGED.
+      const dpr = window.devicePixelRatio || 1;
+      const dx = (e.screenX - s.mouseX) * dpr;
+      const dy = (e.screenY - s.mouseY) * dpr;
       const newX = Math.round(s.winX + dx);
       const newY = Math.round(s.winY + dy);
       s.lastWinX = newX;
@@ -164,6 +167,7 @@ export default function OverlayApp() {
       const s = dragStart.current;
       if (!s) return;
       dragStart.current = null;
+      setIsDragging(false);
       if (monitors.length === 0) return;
       const { w: hudW, h: hudH } = hudSizeRef.current;
       const cx = s.lastWinX + hudW / 2;
@@ -193,7 +197,7 @@ export default function OverlayApp() {
 
   const draggable = settings.useCustomPosition && !settings.isPositionLocked;
   const rootStyle: React.CSSProperties = {
-    cursor: draggable ? "grab" : "default",
+    cursor: draggable ? (isDragging ? "grabbing" : "grab") : "default",
     userSelect: "none",
     background: "transparent",
     display: "inline-block",
