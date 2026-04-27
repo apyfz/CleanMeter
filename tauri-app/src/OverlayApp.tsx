@@ -122,7 +122,17 @@ export default function OverlayApp() {
     const ro = new ResizeObserver(apply);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [settings, monitors]);
+    // Only re-fire the IPC moves/sizes when a position-relevant field
+    // changes — not on every settings update (font sizes, sensor toggles,
+    // etc. would otherwise round-trip a no-op setOverlayPosition).
+  }, [
+    settings.selectedDisplayIndex,
+    settings.useCustomPosition,
+    settings.positionX,
+    settings.positionY,
+    settings.positionIndex,
+    monitors,
+  ]);
 
   // Manual drag. startDragging() needed an async dynamic import that lost the
   // button-down window on Windows before WM_NCLBUTTONDOWN could post, so drag
