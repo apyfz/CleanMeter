@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { OverlayHud } from "@/components/overlay/OverlayHud";
 import { useSensorData } from "@/hooks/useSensorData";
 import { useSettingsStore } from "@/stores/settings-store";
@@ -44,7 +43,15 @@ export default function OverlayApp() {
   const hudRef = useRef<HTMLDivElement>(null);
   const hudSizeRef = useRef<{ w: number; h: number }>({ w: 0, h: 0 });
   const dragStart = useRef<
-    { mouseX: number; mouseY: number; winX: number; winY: number; dpr: number } | null
+    {
+      mouseX: number;
+      mouseY: number;
+      winX: number;
+      winY: number;
+      dpr: number;
+      lastWinX: number;
+      lastWinY: number;
+    } | null
   >(null);
   const [monitors, setMonitors] = useState<MonitorInfo[]>([]);
 
@@ -119,24 +126,26 @@ export default function OverlayApp() {
 
   // Manual drag. startDragging() needed an async dynamic import that lost the
   // button-down window on Windows before WM_NCLBUTTONDOWN could post, so drag
-  // never started. Tracking screenX/screenY + setOverlayPosition is sync and
-  // deterministic.
-  const onMouseDown = async (e: React.MouseEvent) => {
+  // never started. The window position is derived synchronously from
+  // monitors + settings (instead of an async Tauri round-trip) so mousemove
+  // events that fire on the same tick as mousedown aren't dropped.
+  const onMouseDown = (e: React.MouseEvent) => {
     if (!settings.useCustomPosition || settings.isPositionLocked) return;
     if (e.button !== 0) return;
+    if (monitors.length === 0) return;
     e.preventDefault();
-    try {
-      const pos = await getCurrentWindow().outerPosition();
-      dragStart.current = {
-        mouseX: e.screenX,
-        mouseY: e.screenY,
-        winX: pos.x,
-        winY: pos.y,
-        dpr: window.devicePixelRatio || 1,
-      };
-    } catch {
-      /* noop */
-    }
+    const monitor = monitors[settings.selectedDisplayIndex] ?? monitors[0];
+    const winX = monitor.x + Math.round(settings.positionX);
+    const winY = monitor.y + Math.round(settings.positionY);
+    dragStart.current = {
+      mouseX: e.screenX,
+      mouseY: e.screenY,
+      winX,
+      winY,
+      dpr: window.devicePixelRatio || 1,
+      lastWinX: winX,
+      lastWinY: winY,
+    };
   };
 
   useEffect(() => {
@@ -145,35 +154,34 @@ export default function OverlayApp() {
       if (!s) return;
       const dx = (e.screenX - s.mouseX) * s.dpr;
       const dy = (e.screenY - s.mouseY) * s.dpr;
-      setOverlayPosition(Math.round(s.winX + dx), Math.round(s.winY + dy));
+      const newX = Math.round(s.winX + dx);
+      const newY = Math.round(s.winY + dy);
+      s.lastWinX = newX;
+      s.lastWinY = newY;
+      setOverlayPosition(newX, newY);
     };
-    const onUp = async () => {
+    const onUp = () => {
       const s = dragStart.current;
       if (!s) return;
       dragStart.current = null;
       if (monitors.length === 0) return;
-      try {
-        const pos = await getCurrentWindow().outerPosition();
-        const { w: hudW, h: hudH } = hudSizeRef.current;
-        const cx = pos.x + hudW / 2;
-        const cy = pos.y + hudH / 2;
-        let idx = settings.selectedDisplayIndex;
-        for (let i = 0; i < monitors.length; i++) {
-          const m = monitors[i];
-          if (cx >= m.x && cx < m.x + m.width && cy >= m.y && cy < m.y + m.height) {
-            idx = i;
-            break;
-          }
+      const { w: hudW, h: hudH } = hudSizeRef.current;
+      const cx = s.lastWinX + hudW / 2;
+      const cy = s.lastWinY + hudH / 2;
+      let idx = settings.selectedDisplayIndex;
+      for (let i = 0; i < monitors.length; i++) {
+        const m = monitors[i];
+        if (cx >= m.x && cx < m.x + m.width && cy >= m.y && cy < m.y + m.height) {
+          idx = i;
+          break;
         }
-        const m = monitors[idx] ?? monitors[0];
-        updateSettings({
-          selectedDisplayIndex: idx,
-          positionX: Math.round(pos.x - m.x),
-          positionY: Math.round(pos.y - m.y),
-        });
-      } catch {
-        /* noop */
       }
+      const m = monitors[idx] ?? monitors[0];
+      updateSettings({
+        selectedDisplayIndex: idx,
+        positionX: Math.round(s.lastWinX - m.x),
+        positionY: Math.round(s.lastWinY - m.y),
+      });
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);

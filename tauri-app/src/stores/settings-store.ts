@@ -201,7 +201,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
             ...saved,
             sensors: { ...DEFAULT_SETTINGS.sensors, ...(saved.sensors ?? {}) },
           }
-        : DEFAULT_SETTINGS;
+        : { ...DEFAULT_SETTINGS };
       // No UI exposes isPositionLocked, so a stale `true` from an older
       // install would freeze the HUD with no way to recover — both the
       // React drag handlers and the cursor:grab style gate on !locked.
@@ -268,7 +268,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
 
   clearSettings: async () => {
     await tauri.clearSettings();
-    set({ settings: DEFAULT_SETTINGS });
+    set({ settings: { ...DEFAULT_SETTINGS } });
   },
 
   loadPreferences: async () => {
