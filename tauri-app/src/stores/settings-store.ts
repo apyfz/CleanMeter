@@ -212,10 +212,14 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
           ...saved,
           sensors: { ...DEFAULT_SETTINGS.sensors, ...(saved.sensors ?? {}) },
         };
+        // No UI exposes isPositionLocked, so a stale `true` from an older
+        // install would freeze the HUD with no way to recover — both the
+        // React drag handlers and the cursor:grab style gate on !locked.
+        // When the user has picked custom-position, force the lock off.
+        if (settings.useCustomPosition && settings.isPositionLocked) {
+          settings.isPositionLocked = false;
+        }
         set({ settings });
-        // Click-through must be OFF whenever the user wants to drag the HUD.
-        // Older installs could have a stale isPositionLocked: true that would
-        // silently disable mouse input on the overlay window.
         tauri.setOverlayClickThrough(!settings.useCustomPosition && settings.isPositionLocked);
         moveOverlayToMonitor(settings);
       } else {
