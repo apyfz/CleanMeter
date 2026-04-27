@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Globalization;
 using LibreHardwareMonitor.Hardware;
 using Microsoft.Extensions.Logging;
@@ -30,9 +31,12 @@ public class PresentMonPoller(ILogger logger)
     // last 1000ms gives classic frames-per-second, matching Afterburner/RTSS.
     // Without this, Value would be 1000/single_frametime — per-frame
     // instantaneous FPS, which is extremely noisy.
+    // ConcurrentQueue rather than Queue: ParseData runs on the
+    // OutputDataReceived background thread while SetSelectedApp/Clear can
+    // fire from the UI thread, and Queue<T> is not thread-safe.
     private const int FPS_WINDOW_MS = 1000;
-    private readonly Queue<long> _presentedTimestamps = new();
-    private readonly Queue<long> _displayedTimestamps = new();
+    private readonly ConcurrentQueue<long> _presentedTimestamps = new();
+    private readonly ConcurrentQueue<long> _displayedTimestamps = new();
 
     public async void Start(CancellationToken stoppingToken)
     {
@@ -117,9 +121,12 @@ public class PresentMonPoller(ILogger logger)
         }
     }
 
-    private static void TrimWindow(Queue<long> q, long nowMs)
+    private static void TrimWindow(ConcurrentQueue<long> q, long nowMs)
     {
-        while (q.Count > 0 && nowMs - q.Peek() > FPS_WINDOW_MS) q.Dequeue();
+        while (q.TryPeek(out var oldest) && nowMs - oldest > FPS_WINDOW_MS)
+        {
+            q.TryDequeue(out _);
+        }
     }
 
     public void SetSelectedApp(string appName)
