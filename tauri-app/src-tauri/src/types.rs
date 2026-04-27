@@ -301,7 +301,7 @@ pub struct OverlaySettings {
     pub position_x: i32,
     #[serde(rename = "positionY")]
     pub position_y: i32,
-    #[serde(rename = "isPositionLocked")]
+    #[serde(rename = "isPositionLocked", default)]
     pub is_position_locked: bool,
     pub opacity: f32,
     #[serde(rename = "pillOpacity", default = "default_pill_opacity")]
@@ -341,7 +341,7 @@ impl Default for OverlaySettings {
             graph_type: "ring".to_string(),
             position_x: 0,
             position_y: 0,
-            is_position_locked: true,
+            is_position_locked: false,
             opacity: 1.0,
             pill_opacity: 0.3,
             font_size_value: 12.0,

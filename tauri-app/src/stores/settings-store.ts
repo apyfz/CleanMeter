@@ -202,20 +202,31 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
             sensors: { ...DEFAULT_SETTINGS.sensors, ...(saved.sensors ?? {}) },
           }
         : DEFAULT_SETTINGS;
+      // No UI exposes isPositionLocked, so a stale `true` from an older
+      // install would freeze the HUD with no way to recover — both the
+      // React drag handlers and the cursor:grab style gate on !locked.
+      if (settings.useCustomPosition && settings.isPositionLocked) {
+        settings.isPositionLocked = false;
+      }
       set({ settings });
-      tauri.setOverlayClickThrough(settings.isPositionLocked);
+      tauri.setOverlayClickThrough(!settings.useCustomPosition && settings.isPositionLocked);
     } catch {
-      tauri.setOverlayClickThrough(DEFAULT_SETTINGS.isPositionLocked);
+      tauri.setOverlayClickThrough(false);
     }
   },
 
   updateSettings: (patch) => {
     const newSettings = { ...get().settings, ...patch };
+    // Mirror the loadSettings guard — when custom-position is on, never
+    // carry a stale lock that would silently re-disable drag.
+    if (newSettings.useCustomPosition && newSettings.isPositionLocked) {
+      newSettings.isPositionLocked = false;
+    }
     set({ settings: newSettings });
     debouncedSave(newSettings);
 
-    if (patch.isPositionLocked !== undefined) {
-      tauri.setOverlayClickThrough(newSettings.isPositionLocked);
+    if (patch.isPositionLocked !== undefined || patch.useCustomPosition !== undefined) {
+      tauri.setOverlayClickThrough(!newSettings.useCustomPosition && newSettings.isPositionLocked);
     }
     if (patch.opacity !== undefined) {
       tauri.setOverlayOpacity(patch.opacity);
