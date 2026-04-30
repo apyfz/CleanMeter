@@ -4,6 +4,7 @@ import type {
   HardwareMonitorData,
   PipeStatus,
   SensorKey,
+  FramerateSensorConfig,
   GraphSensorConfig,
   Boundaries,
   AppPreferences,
@@ -273,8 +274,11 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     // immediately — saving to disk alone never reached it, which is why
     // manual selection had no effect on FPS. Empty maps to "Auto"
     // (foreground-window detection on the C# side).
-    if (key === "framerate" && (patch as any).targetAppName !== undefined) {
-      tauri.selectPresentMonApp((patch as any).targetAppName || "Auto");
+    if (key === "framerate") {
+      const framerate = patch as Partial<FramerateSensorConfig>;
+      if (framerate.targetAppName !== undefined) {
+        tauri.selectPresentMonApp(framerate.targetAppName || "Auto");
+      }
     }
   },
 
