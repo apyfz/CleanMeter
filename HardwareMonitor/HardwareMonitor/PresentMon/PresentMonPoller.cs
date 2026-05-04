@@ -64,8 +64,14 @@ public class PresentMonPoller(ILogger logger)
     // OCAT, and the Intel PresentMon SDK use.
     private const int FPS_WINDOW_MS = 1000;
     private const int FPS_STALE_MS = 1500;
-    private readonly Queue<(double startTimeMs, float frametimeMs)> _presentedFrames = new();
-    private readonly Queue<(double startTimeMs, float frametimeMs)> _displayedFrames = new();
+    private readonly Queue<(double startTimeMs, float intervalMs)> _presentedFrames = new();
+    private readonly Queue<(double startTimeMs, float intervalMs)> _displayedFrames = new();
+    // Running sums kept in lockstep with the queues so UpdateFromBuffer is
+    // O(1) instead of O(N). At 180-300 fps the queues hold ~180-300 entries
+    // and ParseData's O(N) sum was burning lock-time on every row; pre-aggregating
+    // means the lock-held block is just an enqueue + dequeue + arithmetic.
+    private double _presentedSumMs;
+    private double _displayedSumMs;
     private double _latestStartTimeMs;
     private long _lastRowArrivalMs;
 
@@ -239,13 +245,23 @@ public class PresentMonPoller(ILogger logger)
             _lastRowArrivalMs = nowMs;
 
             _presentedFrames.Enqueue((startMs, ftMs));
-            UpdateFromBuffer(_presentedFrames, Presented);
+            _presentedSumMs += ftMs;
+            UpdateFromBuffer(_presentedFrames, ref _presentedSumMs, Presented);
 
+            // Displayed FPS uses the display-to-display interval (column
+            // 17), NOT the present-to-present interval. The presented-FPS
+            // and displayed-FPS values diverge whenever the display
+            // refresh rate clamps the rendered framerate (e.g. 240fps
+            // game on a 144Hz monitor displays ~144fps). Frames where
+            // DisplayedTime is 0 were dropped before scan-out and don't
+            // contribute to either count or sum.
             if (double.TryParse(parts[17], NumberStyles.Any, _cultureInfo, out var displayedTime)
                 && displayedTime > 0)
             {
-                _displayedFrames.Enqueue((startMs, ftMs));
-                UpdateFromBuffer(_displayedFrames, Displayed);
+                var dtMs = (float)displayedTime;
+                _displayedFrames.Enqueue((startMs, dtMs));
+                _displayedSumMs += dtMs;
+                UpdateFromBuffer(_displayedFrames, ref _displayedSumMs, Displayed);
             }
 
             // Raw per-frame value — graph plots history of this and gets
@@ -259,22 +275,23 @@ public class PresentMonPoller(ILogger logger)
 
     // Trims entries older than FPS_WINDOW_MS of game time (using PresentMon's
     // own CPUStartTime, NOT wall clock — see field comment above) and
-    // recomputes the sensor value as fps = N * 1000 / Σ frametime_ms. Caller
-    // must hold _stateLock. Empty buffer → 0 fps (game paused / stale).
-    private void UpdateFromBuffer(Queue<(double startTimeMs, float frametimeMs)> q, PresentMonSensor sensor)
+    // recomputes the sensor value as fps = N * 1000 / Σ interval_ms. Maintains
+    // the running sum by ref so the trim is O(K) on the entries actually
+    // dequeued (typically 0-1 per call) rather than O(N) over the whole
+    // buffer. Caller must hold _stateLock. Empty buffer → 0 fps.
+    private void UpdateFromBuffer(Queue<(double startTimeMs, float intervalMs)> q, ref double sumMs, PresentMonSensor sensor)
     {
         while (q.Count > 0 && _latestStartTimeMs - q.Peek().startTimeMs > FPS_WINDOW_MS)
         {
-            q.Dequeue();
+            sumMs -= q.Dequeue().intervalMs;
         }
-        if (q.Count == 0)
+        if (q.Count == 0 || sumMs <= 0)
         {
+            sumMs = 0;
             sensor.Value = 0;
             return;
         }
-        double sum = 0;
-        foreach (var (_, ft) in q) sum += ft;
-        sensor.Value = (float)(q.Count * 1000.0 / sum);
+        sensor.Value = (float)(q.Count * 1000.0 / sumMs);
     }
 
     public void SetSelectedApp(string appName)
@@ -285,6 +302,8 @@ public class PresentMonPoller(ILogger logger)
             // the new app's FPS with the old app's frame timings.
             _presentedFrames.Clear();
             _displayedFrames.Clear();
+            _presentedSumMs = 0;
+            _displayedSumMs = 0;
             _latestStartTimeMs = 0;
             Presented.Value = 0;
             Displayed.Value = 0;
@@ -414,14 +433,16 @@ public class PresentMonPoller(ILogger logger)
                 {
                     _presentedFrames.Clear();
                     _displayedFrames.Clear();
+                    _presentedSumMs = 0;
+                    _displayedSumMs = 0;
                     Presented.Value = 0;
                     Displayed.Value = 0;
                     Frametime.Value = 0;
                 }
                 else
                 {
-                    UpdateFromBuffer(_presentedFrames, Presented);
-                    UpdateFromBuffer(_displayedFrames, Displayed);
+                    UpdateFromBuffer(_presentedFrames, ref _presentedSumMs, Presented);
+                    UpdateFromBuffer(_displayedFrames, ref _displayedSumMs, Displayed);
                     // Frametime intentionally not updated here — ParseData
                     // sets it raw per row so the overlay graph keeps its
                     // per-frame jitter. This branch only refreshes the
@@ -494,6 +515,8 @@ public class PresentMonPoller(ILogger logger)
                         {
                             _presentedFrames.Clear();
                             _displayedFrames.Clear();
+                            _presentedSumMs = 0;
+                            _displayedSumMs = 0;
                             _latestStartTimeMs = 0;
                             Presented.Value = 0;
                             Displayed.Value = 0;
