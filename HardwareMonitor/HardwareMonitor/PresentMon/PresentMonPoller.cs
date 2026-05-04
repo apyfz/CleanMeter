@@ -13,6 +13,7 @@ namespace HardwareMonitor.PresentMon;
 public class PresentMonPoller(ILogger logger)
 {
     private const string NO_SELECTED_APP = "NONE";
+    private const string AUTO_MODE = "Auto";
 
     private IHardware _hardware = new PresentMonHardware();
     public PresentMonSensor Displayed { get; private set; }
@@ -141,62 +142,74 @@ public class PresentMonPoller(ILogger logger)
         // case-insensitive, so duplicate-cased entries collapse.
         CurrentApps.Add(rowApp);
 
+        bool match;
         lock (_stateLock)
         {
-            // Determine which app's frames count for the rolling window.
-            // - Manual selection: filter by exactly that app — but if no row
-            //   has matched it for SELECTED_APP_STALE_MS (e.g. user picked
-            //   slack.exe from a prior session and Slack isn't running),
-            //   fall back to the foreground for this row so the counter
-            //   keeps tracking the actual game.
-            // - Auto: filter by the current foreground process.
-            // If neither yields an app, drop the row rather than aggregate
-            // everything.
-            string activeApp;
+            // Decide attribution under the lock so a foreground swap or
+            // manual-selection change can't slip in between the comparison
+            // and the enqueue. Single comparison per branch — once we know
+            // whether this row counts, the lock has nothing else to guard.
+            // - Manual selection: row counts if it matches the picked app.
+            //   If no row has matched the picked app for
+            //   SELECTED_APP_STALE_MS (e.g. user picked slack.exe from a
+            //   prior session and Slack isn't running), the row counts if
+            //   it matches the foreground instead — keeps the overlay
+            //   tracking the actual game without disturbing the dropdown.
+            // - Auto: row counts if it matches the foreground.
             if (_currentSelectedApp != NO_SELECTED_APP)
             {
-                activeApp = _currentSelectedApp;
-                if (string.Equals(activeApp, rowApp, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(_currentSelectedApp, rowApp, StringComparison.OrdinalIgnoreCase))
                 {
                     _lastSelectedAppMatchMs = nowMs;
+                    match = true;
                 }
                 else if (nowMs - _lastSelectedAppMatchMs > SELECTED_APP_STALE_MS
-                         && !string.IsNullOrEmpty(_foregroundAppName))
+                         && !string.IsNullOrEmpty(_foregroundAppName)
+                         && string.Equals(_foregroundAppName, rowApp, StringComparison.OrdinalIgnoreCase))
                 {
-                    activeApp = _foregroundAppName;
+                    match = true;
+                }
+                else
+                {
+                    match = false;
                 }
             }
             else
             {
-                activeApp = _foregroundAppName;
+                match = !string.IsNullOrEmpty(_foregroundAppName)
+                        && string.Equals(_foregroundAppName, rowApp, StringComparison.OrdinalIgnoreCase);
             }
 
-            if (string.IsNullOrEmpty(activeApp)
-                || !string.Equals(activeApp, rowApp, StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
+            if (!match) return;
 
-            if (float.TryParse(parts[9], NumberStyles.Any, _cultureInfo, out var frametime))
-            {
-                Frametime.Value = frametime;
-            }
-
-            // Every CSV row is a present event — count them over 1000ms.
+            // Every CSV row that gets here is a present event for the
+            // active app. Enqueue under the lock so concurrent queue
+            // clears (foreground swap, SetSelectedApp) can't drop this
+            // frame mid-update.
             _presentedTimestamps.Enqueue(nowMs);
-            TrimWindow(_presentedTimestamps, nowMs);
-            Presented.Value = _presentedTimestamps.Count;
 
-            // Only count as a displayed frame when the scan-out interval is
-            // non-zero (dropped frames report 0 here).
+            // Only count as a displayed frame when the scan-out interval
+            // is non-zero (dropped frames report 0 here).
             if (float.TryParse(parts[17], NumberStyles.Any, _cultureInfo, out var displayed)
                 && displayed > 0)
             {
                 _displayedTimestamps.Enqueue(nowMs);
             }
-            TrimWindow(_displayedTimestamps, nowMs);
-            Displayed.Value = _displayedTimestamps.Count;
         }
+
+        // Trimming and Value writes happen outside the lock — both queues
+        // are ConcurrentQueue and the sensor Value writes are independent
+        // of the attribution state. Holding the lock through TrimWindow
+        // (which can dequeue hundreds of items per call) would stall
+        // PollForegroundAsync at 500ms cadence on every row.
+        if (float.TryParse(parts[9], NumberStyles.Any, _cultureInfo, out var frametime))
+        {
+            Frametime.Value = frametime;
+        }
+        TrimWindow(_presentedTimestamps, nowMs);
+        Presented.Value = _presentedTimestamps.Count;
+        TrimWindow(_displayedTimestamps, nowMs);
+        Displayed.Value = _displayedTimestamps.Count;
     }
 
     private static void TrimWindow(ConcurrentQueue<long> q, long nowMs)
@@ -220,7 +233,7 @@ public class PresentMonPoller(ILogger logger)
             // fall back to foreground attribution.
             _lastSelectedAppMatchMs = Environment.TickCount64;
 
-            if (string.Equals(appName, "Auto", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(appName, AUTO_MODE, StringComparison.OrdinalIgnoreCase))
             {
                 _currentSelectedApp = NO_SELECTED_APP;
                 return;
