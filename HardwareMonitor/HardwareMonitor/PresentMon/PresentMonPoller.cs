@@ -138,13 +138,17 @@ public class PresentMonPoller(ILogger logger)
         var rowApp = parts[0];
         var nowMs = Environment.TickCount64;
 
-        // Tracked outside the lock — the dropdown source. The set is
-        // case-insensitive, so duplicate-cased entries collapse.
-        CurrentApps.Add(rowApp);
-
         bool match;
         lock (_stateLock)
         {
+            // Add inside the lock — HashSet<T> is not thread-safe, and
+            // CurrentApps is also touched by ClearCurrentAppsAsync (timer)
+            // and MonitorPoller's SendPresentMonAppsToClients (pipe
+            // serializer). The set is case-insensitive, so duplicate-cased
+            // entries collapse.
+            CurrentApps.Add(rowApp);
+
+
             // Decide attribution under the lock so a foreground swap or
             // manual-selection change can't slip in between the comparison
             // and the enqueue. Single comparison per branch — once we know
@@ -268,8 +272,25 @@ public class PresentMonPoller(ILogger logger)
         if (cancellationToken.IsCancellationRequested) return;
         await Task.Delay(10_000, cancellationToken);
         OnUpdateApps?.Invoke();
-        CurrentApps.Clear();
+        lock (_stateLock)
+        {
+            CurrentApps.Clear();
+        }
         _ = ClearCurrentAppsAsync(cancellationToken);
+    }
+
+    // Returns a point-in-time copy of CurrentApps for callers on other
+    // threads (e.g. MonitorPoller serializing the dropdown payload to
+    // the pipe). HashSet<T> is not safe to enumerate concurrently with
+    // ParseData's Add, so the snapshot is taken under _stateLock.
+    public string[] SnapshotCurrentApps()
+    {
+        lock (_stateLock)
+        {
+            var snapshot = new string[CurrentApps.Count];
+            CurrentApps.CopyTo(snapshot);
+            return snapshot;
+        }
     }
 
     // Single foreground resolution — used both for the synchronous warm-up
